@@ -1,0 +1,12 @@
+README.md
+setup.py
+storch/__init__.py
+storch/configurator.py
+storch/exec_info.py
+storch/helpers.py
+storch/loader.py
+storch/training.py
+storch.egg-info/PKG-INFO
+storch.egg-info/SOURCES.txt
+storch.egg-info/dependency_links.txt
+storch.egg-info/top_level.txt

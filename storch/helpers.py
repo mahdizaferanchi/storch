@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 import wandb
 import time
-from exec_info import ddp, master_process, device
+from .exec_info import ddp, master_process, device
 import sys
 from typing import Any
 from torch.distributed import barrier

@@ -1,0 +1,11 @@
+Metadata-Version: 2.1
+Name: storch
+Version: 0.1.0
+Summary: Pytorch starter project containing training code and utils like configuration and logging.
+Home-page: https://github.com/yourusername/storch
+Author: Your Name
+Author-email: your.email@example.com
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.6

@@ -3,7 +3,7 @@ from contextlib import nullcontext
 
 import torch
 from torch.nn.parallel import DistributedDataParallel as DDP
-from exec_info import ddp, ddp_local_rank, device
+from .exec_info import ddp, ddp_local_rank, device
 
 
 class SimpleTrainer:

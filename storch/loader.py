@@ -1,4 +1,4 @@
-from helpers import DummyLogger, move_to
+from .helpers import DummyLogger, move_to
 from exec_info import device
 import sys
 
