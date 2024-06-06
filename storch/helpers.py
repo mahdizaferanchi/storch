@@ -13,11 +13,6 @@ from torch.distributed import barrier
 
 inf = sys.maxsize
 
-
-def get_project_root() -> Path:
-    return Path(__file__).parent.parent
-
-
 def get_minutes_left():
     try:
         limit_dt = datetime.fromisoformat(os.environ["EXPIRE_TIME"])
@@ -164,20 +159,8 @@ def sync_barrier():
     if ddp:
         barrier()
 
-def wandb_init(project, _id, config):
-    if master_process:
-        wandb.init(
-            project=project,
-            id=_id,
-            config=config,
-            allow_val_change=True,
-            dir=get_project_root() / "data",
-            resume="allow",
-        )
-
-def wandb_load_state(_id):
-    checkpoints_dir = get_project_root() / "checkpoints"
-    checkpoints_dir.mkdir(parents=True, exist_ok=True)
+def wandb_load_state(_id, checkpoints_dir):
+    checkpoints_dir = Path(checkpoints_dir).mkdir(parents=True, exist_ok=True)
     load_artifact_name = f"{_id}_state"
     if master_process:
         with dbm.open('torch', 'c') as db:
@@ -195,10 +178,9 @@ def wandb_load_state(_id):
             state = None
     return state
 
-def wandb_log_state(trainer, _id):
+def wandb_log_state(trainer, _id, checkpoints_dir):
     """Logs `trainer.state_dict()`"""
-    checkpoints_dir = get_project_root() / "checkpoints"
-    checkpoints_dir.mkdir(parents=True, exist_ok=True)
+    checkpoints_dir = Path(checkpoints_dir).mkdir(parents=True, exist_ok=True)
     artifact_name = f"{_id}_state"
     if master_process:
         trainer_artifact = wandb.Artifact(name=artifact_name, type="model")

@@ -1,5 +1,5 @@
 from .helpers import DummyLogger, move_to
-from exec_info import device
+from .exec_info import device
 import sys
 
 inf = sys.maxsize

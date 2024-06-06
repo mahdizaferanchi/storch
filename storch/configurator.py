@@ -14,7 +14,7 @@ def configurable(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         # Extract the namespace (if provided)
-        namespace = kwargs.pop('c', None)
+        namespace = kwargs.pop('_c', None)
         
         # Get the function name
         func_name = func.__name__
