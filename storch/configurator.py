@@ -26,11 +26,10 @@ def configurable(func):
         # Determine the search order for the config values
         config_sources = []
 
-        if namespace:
-            if namespace in configuration:
-                config_sources.append(configuration[namespace])
-            if func_name in configuration and namespace in configuration[func_name]:
+        if func_name in configuration:
+            if namespace and namespace in configuration[func_name]:
                 config_sources.append(configuration[func_name][namespace])
+            config_sources.append(configuration[func_name])
 
         config_sources.append(configuration)
 
