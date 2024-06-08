@@ -10,6 +10,7 @@ from .exec_info import ddp, master_process, device
 import sys
 from typing import Any
 from torch.distributed import barrier
+from .configurator import configurable
 
 inf = sys.maxsize
 
@@ -142,16 +143,16 @@ class DummyLogger:
     def out(self, message):
         pass
 
-
-def get_logger(project, _id, time_interval,
-                progress_ratio_interval, progress_steps_interval):
+@configurable
+def get_logger(time_interval, progress_ratio_interval,
+               progress_steps_interval, ntfy_path):
 
     Logger = PrintLogger if master_process else DummyLogger
     return Logger(
         time_interval=time_interval,
         progress_ratio_interval=progress_ratio_interval,
         progress_steps_interval=progress_steps_interval,
-        ntfy_path=f"{project}_{_id}",
+        ntfy_path=ntfy_path,
     )
 
 
@@ -159,6 +160,7 @@ def sync_barrier():
     if ddp:
         barrier()
 
+@configurable
 def wandb_load_state(_id, checkpoints_dir):
     checkpoints_dir = Path(checkpoints_dir).mkdir(parents=True, exist_ok=True)
     load_artifact_name = f"{_id}_state"
@@ -178,6 +180,7 @@ def wandb_load_state(_id, checkpoints_dir):
             state = None
     return state
 
+@configurable
 def wandb_log_state(trainer, _id, checkpoints_dir):
     """Logs `trainer.state_dict()`"""
     checkpoints_dir = Path(checkpoints_dir).mkdir(parents=True, exist_ok=True)

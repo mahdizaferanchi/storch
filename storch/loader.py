@@ -1,9 +1,10 @@
-from .helpers import DummyLogger, move_to
+from .helpers import DummyLogger, move_to, configurable
 from .exec_info import device
 import sys
 
 inf = sys.maxsize
 
+@configurable
 class EnumData:
     def __init__(
         self,
