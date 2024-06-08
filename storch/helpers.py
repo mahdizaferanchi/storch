@@ -162,7 +162,8 @@ def sync_barrier():
 
 @configurable
 def wandb_load_state(_id, checkpoints_dir):
-    checkpoints_dir = Path(checkpoints_dir).mkdir(parents=True, exist_ok=True)
+    checkpoints_dir = Path(checkpoints_dir)
+    checkpoints_dir.mkdir(parents=True, exist_ok=True)
     load_artifact_name = f"{_id}_state"
     if master_process:
         with dbm.open('torch', 'c') as db:
@@ -183,7 +184,8 @@ def wandb_load_state(_id, checkpoints_dir):
 @configurable
 def wandb_log_state(trainer, _id, checkpoints_dir):
     """Logs `trainer.state_dict()`"""
-    checkpoints_dir = Path(checkpoints_dir).mkdir(parents=True, exist_ok=True)
+    checkpoints_dir = Path(checkpoints_dir)
+    checkpoints_dir.mkdir(parents=True, exist_ok=True)
     artifact_name = f"{_id}_state"
     if master_process:
         trainer_artifact = wandb.Artifact(name=artifact_name, type="model")
