@@ -1,5 +1,6 @@
 from collections import defaultdict
 from contextlib import nullcontext
+from storch import configurable
 
 import torch
 from torch.nn.parallel import DistributedDataParallel as DDP
@@ -78,7 +79,8 @@ class SimpleTrainer:
 
 class Trainer(SimpleTrainer):
     def __init__(
-        self, model, loss_fn, optimizer, metrics, state=None, dtype="float16"
+        self, model, loss_fn, optimizer, metrics, state=None, dtype="float16", 
+        grad_clip=0., gradient_accumulation_steps=1, get_lr=None
     ) -> None:
         super().__init__(model, loss_fn, optimizer, metrics)
         self.raw_model = model
@@ -100,16 +102,37 @@ class Trainer(SimpleTrainer):
             else torch.amp.autocast(device_type=device_type, dtype=ptdtype)
         )
 
-    def train_step(self, x, y):
-        with self.ctx:
-            preds = self.model(x)
-            self.loss = self.loss_fn(preds, y)
+        self.grad_clip = grad_clip
+        self.gradient_accumulation_steps = gradient_accumulation_steps
+        self.get_lr = get_lr
+        self.iter_num = 0
 
-        self.scaler.scale(self.loss).backward()
+    def train_step(self, x, y):
+        if self.get_lr:
+            lr = self.get_lr(self.iter_num)
+            for param_group in self.optimizer.param_groups:
+                param_group['lr'] = lr
+
+        for micro_step in range(self.gradient_accumulation_steps):
+            if ddp:
+                # explanation here: https://github.com/karpathy/nanoGPT/blob/master/train.py
+                self.model.require_backward_grad_sync = (
+                    micro_step == self.gradient_accumulation_steps - 1)
+            with self.ctx:
+                preds = self.model(x)
+                self.loss = self.loss_fn(preds, y)
+            self.scaler.scale(self.loss).backward()
+
+        if self.grad_clip != 0.0:
+            self.scaler.unscale_(self.optimizer)
+            torch.nn.utils.clip_grad_norm_(
+                self.model.parameters(), self.grad_clip)
+
         self.scaler.step(self.optimizer)
         self.scaler.update()
         self.optimizer.zero_grad(set_to_none=True)
 
+        self.iter_num += 1
         self.trigger_callbacks("train_step_end")
 
     @torch.no_grad()
@@ -136,9 +159,11 @@ class Trainer(SimpleTrainer):
 
 
 class Distiller(Trainer):
-    def __init__(self, model, eval_model, loss_fn, optimizer, metrics, loss_metrics, state=None, dtype="float16") -> None:
+    def __init__(self, model, eval_model, loss_fn, optimizer, metrics, loss_metrics, state=None, dtype="float16",
+                 grad_clip=0., gradient_accumulation_steps=1, get_lr=None) -> None:
         self.eval_model = eval_model.to(device)
-        super().__init__(model, loss_fn, optimizer, metrics, state, dtype)
+        super().__init__(model, loss_fn, optimizer, metrics, state, dtype,
+                         grad_clip, gradient_accumulation_steps, get_lr)
         self.loss_metrics = loss_metrics
         self.loss_metrics.to(device)
 
@@ -168,9 +193,14 @@ class Distiller(Trainer):
             "model": self.eval_model.state_dict(),
             "optimizer": self.optimizer.state_dict(),
             "epoch": self.epoch,
+            "iter_num": self.iter_num,
         }
 
     def load_state_dict(self, state):
         self.eval_model.load_state_dict(state["model"])
         self.optimizer.load_state_dict(state["optimizer"])
         self.epoch = state["epoch"]
+        self.iter_num = state["iter_num"]
+
+trainer_constructor = configurable(Trainer)
+distiller_constructor = configurable(Distiller)
